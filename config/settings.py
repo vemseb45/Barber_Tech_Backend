@@ -123,6 +123,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
+#Horario Latino America
+#Colombia 
+#Datos que se guardan en DB Fecha_registro
 LANGUAGE_CODE = 'es-co'
 
 TIME_ZONE = 'America/Bogota'
