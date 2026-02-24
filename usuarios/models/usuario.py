@@ -13,9 +13,10 @@ class Usuario(AbstractUser):
         ('Activo', 'Activo'),
         ('Inactivo', 'Inactivo'),
     ]
-
+    
+    email = models.EmailField(unique=True)
     cedula = models.CharField(max_length=100, unique=True)
-    telefono = models.CharField(max_length=20, unique=True)
+    telefono = models.CharField(max_length=10, unique=True)
     rol = models.CharField(max_length=20, choices=ROLES, default='Cliente')
     estado = models.CharField(max_length=20, choices=ESTADOS, default='Activo')
 
