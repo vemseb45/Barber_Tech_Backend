@@ -17,6 +17,7 @@ class LoginSerializer(serializers.Serializer):
             raise serializers.ValidationError("Debe incluir usuario y contraseña.")
 
         data['user'] = user
+        data['rol'] = user.rol
         return data
 
 

@@ -1,26 +1,24 @@
-from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 class Usuario(AbstractUser):
 
+    # Definimos las opciones del rol
     ROLES = [
         ('Cliente', 'Cliente'),
         ('Barbero', 'Barbero'),
-        ('Admin', 'Admin'),
-    ]
-
-    ESTADOS = [
-        ('Activo', 'Activo'),
-        ('Inactivo', 'Inactivo'),
+        ('Admin', 'Administrador'),
     ]
     
-    email = models.EmailField(unique=True)
-    cedula = models.CharField(max_length=100, unique=True)
-    telefono = models.CharField(max_length=10, unique=True)
-    rol = models.CharField(max_length=20, choices=ROLES, default='Cliente')
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='Activo')
-
-    REQUIRED_FIELDS = ['email', 'cedula', 'telefono']
+    rol = models.CharField(
+        max_length=20, 
+        choices=ROLES, 
+        default='Cliente'
+    )
+    
+    cedula = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    telefono = models.CharField(max_length=20, null=True, blank=True)
+    estado = models.CharField(max_length=20, default='Activo')
 
     def __str__(self):
-        return self.username
+        return f"{self.username} - {self.rol}"
