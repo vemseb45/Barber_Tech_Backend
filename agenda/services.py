@@ -1,34 +1,37 @@
-# agenda/services.py
 from datetime import datetime, timedelta
-from rest_framework.exceptions import ValidationError
-from .models import Cita
-from .utils.agenda import obtener_disponibilidad_opt
+from .models import AgendaBarbero, Cita
 
-def reservar_cita(cedula_barbero, cedula_cliente, fecha_str, hora_str, duracion, id_servicio):
-    """
-    Lógica de reserva de cita centralizada
-    """
-    # Convertir fecha y hora
+def calcular_disponibilidad(cedula_barbero, fecha_str):
+    # 1. Saber qué día de la semana es (Lunes, Martes...)
+    dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
+    fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+    dia_nombre = dias_semana[fecha_obj.weekday()]
+
+    # 2. Consultar el horario del barbero ese día
     try:
-        fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-        hora_inicio = datetime.strptime(hora_str, '%H:%M:%S').time()
-    except ValueError:
-        raise ValidationError("Formato de fecha u hora inválido")
+        horario = AgendaBarbero.objects.get(cedula_barbero=cedula_barbero, dia=dia_nombre)
+    except AgendaBarbero.DoesNotExist:
+        return [] # El barbero no trabaja ese día
 
-    # Calcular bloques disponibles
-    bloques_disponibles = obtener_disponibilidad_opt(cedula_barbero, fecha, duracion)
-    hora_fin = (datetime.combine(fecha, hora_inicio) + timedelta(minutes=duracion)).time()
+    # 3. Buscar las citas que ya están ocupadas ese día
+    citas_ocupadas = Cita.objects.filter(
+        cedula_barbero=cedula_barbero, 
+        fecha=fecha_obj
+    ).values_list('hora', flat=True)
 
-    # Validación de disponibilidad
-    if (hora_inicio, hora_fin) not in bloques_disponibles:
-        raise ValidationError("Horario no disponible")
+    # 4. Generar los bloques de tiempo (Ej: cada 1 hora)
+    bloques = []
+    hora_actual = datetime.combine(fecha_obj, horario.hora_inicio)
+    hora_fin = datetime.combine(fecha_obj, horario.hora_fin)
 
-    # Crear cita
-    cita = Cita.objects.create(
-        fecha=fecha,
-        hora=hora_inicio,
-        cedula_cliente_id=cedula_cliente,
-        cedula_barbero_id=cedula_barbero,
-        id_servicio=id_servicio
-    )
-    return cita
+    while hora_actual < hora_fin:
+        estado = "ocupado" if hora_actual.time() in citas_ocupadas else "disponible"
+        
+        bloques.append({
+            "hora": hora_actual.strftime('%I:%M %p'), # Lo que ve el usuario (09:00 AM)
+            "hora_db": hora_actual.strftime('%H:%M:%S'), # Lo que enviamos al POST (09:00:00)
+            "estado": estado
+        })
+        hora_actual += timedelta(hours=1) # Intervalo de 1 hora
+
+    return bloques

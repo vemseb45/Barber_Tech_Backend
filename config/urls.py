@@ -32,5 +32,5 @@ urlpatterns = [
     path('api/usuarios/', include('usuarios.urls')),
     
     # Módulo Agenda
-    path('api/', include('agenda.urls')),
+    path('api/agenda/', include('agenda.urls')),
 ]
