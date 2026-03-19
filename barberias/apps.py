@@ -1,14 +1,6 @@
-from django.contrib import admin
-from barberias.models import Barberia, Especialidad
+from django.apps import AppConfig
 
 
-@admin.register(Barberia)
-class BarberiaAdmin(admin.ModelAdmin):
-    list_display = ("id_barberia", "nombre", "telefono", "email")
-    search_fields = ("nombre",)
-
-
-@admin.register(Especialidad)
-class EspecialidadAdmin(admin.ModelAdmin):
-    list_display = ("id_especialidad", "nombre")
-    search_fields = ("nombre",)
+class BarberiasConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "barberias"
