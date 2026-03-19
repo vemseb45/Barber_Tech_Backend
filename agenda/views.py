@@ -1,129 +1,112 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .serializers import BarberoSerializer, CitaSerializer
-from .models import Usuario, AgendaBarbero, Cita
 from datetime import datetime, timedelta
 
-# 1. LISTA DE BARBEROS
-class ListaBarberosView(APIView):
-    def get(self, request):
-        barberos = Usuario.objects.filter(rol__iexact='Barbero')
-        print(f"DEBUG: Se encontraron {barberos.count()} barberos en la base de datos.")
-        
-        serializer = BarberoSerializer(barberos, many=True)
-        data = [{
-            "id": str(b['id']),
-            "nombre": b['username'],
-            "especialidad": "Barbero Profesional"
-        } for b in serializer.data]
-        
-        return Response(data)
+# IMPORTACIONES CORRECTAS
+from .models import AgendaBarbero
+from cita.models import Cita  
+from usuarios.models.usuario import Usuario
+from .serializers import BarberoSerializer, CitaSerializer, AgendaBarberoSerializer
 
-# 2. DISPONIBILIDAD
 class DisponibilidadBarbero(APIView):
     def get(self, request):
-        barbero_id = request.query_params.get('barberoId')
-        fecha_str = request.query_params.get('fecha')
-
+        barbero_id = request.query_params.get("barberoId")
+        fecha_str = request.query_params.get("fecha")
+        
         if not barbero_id or not fecha_str:
-            return Response([], status=200)
+            return Response({"success": False, "message": "Faltan parámetros"}, status=400)
 
         try:
-            fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d')
-            dias_semana = ['Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado', 'Domingo']
-            nombre_dia = dias_semana[fecha_obj.weekday()]
+            fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+            
+            # 1. Definimos los días exactamente como suelen estar en las DBs (puedes probar con/sin acento)
+            # Si en tu DB dice "Sabado", quítale el acento aquí:
+            dias = ["Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"]
+            nombre_dia = dias[fecha_obj.weekday()]
 
-            horario_base = AgendaBarbero.objects.filter(
-                cedula_barbero=str(barbero_id), 
-                dia=nombre_dia
+            # 2. Usamos __iexact para que busque "Sabado" o "sabado" sin problemas
+            agenda = AgendaBarbero.objects.filter(
+                cedula_barbero=barbero_id, 
+                dia__iexact=nombre_dia  # <--- iExact ignora mayúsculas/minúsculas
             ).first()
 
-            if not horario_base:
-                return Response([], status=200)
-
-            horas_disponibles = []
-            actual = datetime.combine(fecha_obj, horario_base.hora_inicio)
-            fin = datetime.combine(fecha_obj, horario_base.hora_fin)
-
-            # --- EL ARREGLO ESTÁ AQUÍ ---
-            while actual < fin:
-                # En lugar de solo texto, enviamos el OBJETO que React espera
-                horas_disponibles.append({
-                    "hora": actual.strftime('%H:%M'),       # Lo que se ve en el botón
-                    "hora_db": actual.strftime('%H:%M:%S')  # Lo que se guarda en la DB
+            if not agenda:
+                # Esto te ayudará a ver qué intentó buscar Django en tu consola:
+                print(f"DEBUG: Buscando horario para barbero {barbero_id} el dia {nombre_dia}")
+                return Response({
+                    "success": True, 
+                    "message": f"No hay agenda para el día {nombre_dia}", 
+                    "data": [] 
                 })
-                actual += timedelta(minutes=60)
-
-            # Consultamos citas existentes
+            
+    # ... resto del código de los bloques (el while) ...
+            # 3. Corregimos el filtro de citas: usamos 'cedula_barbero_id' (o el que use tu modelo Cita)
             citas_existentes = Cita.objects.filter(
-                cedula_barbero_id=str(barbero_id),
-                fecha=fecha_str
+                cedula_barbero_id=barbero_id, 
+                fecha=fecha_obj
             ).values_list('hora', flat=True)
-            
-            # Formateamos citas para comparar
-            citas_formateadas = [c.strftime('%H:%M') for c in citas_existentes]
-            
-            # Filtramos comparando contra la propiedad "hora" del objeto
-            resultado = [h for h in horas_disponibles if h["hora"] not in citas_formateadas]
 
-            return Response(resultado, status=200)
+            # 4. Generar bloques
+            bloques = []
+            hora_actual = datetime.combine(fecha_obj, agenda.hora_inicio)
+            hora_fin = datetime.combine(fecha_obj, agenda.hora_fin)
 
-        except Exception as e:
-            return Response({"error": str(e)}, status=500)
+            while hora_actual < hora_fin:
+                hora_db = hora_actual.time()
+                # Comparamos si la hora está en las citas existentes
+                esta_ocupada = any(c.strftime('%H:%M') == hora_db.strftime('%H:%M') for c in citas_existentes)
 
-# 3. RESERVAR CITA (Nombre exacto para que urls.py no falle)
-class ReservarCita(APIView):
-    def post(self, request):
-        data = request.data
-        print(f"DEBUG DATA RECIBIDA: {data}") # 🔍 Esto te dirá qué está llegando
+                bloques.append({
+                    "hora": hora_actual.strftime('%I:%M %p'),
+                    "hora_db": hora_actual.strftime('%H:%M:%S'),
+                    "disponible": not esta_ocupada
+                })
+                
+                hora_actual += timedelta(minutes=30) # Bloques de 30 min
 
-        try:
-            # Extraemos con valores por defecto para evitar errores de None
-            fecha = data.get('fecha')
-            # Intentamos obtener hora_db, si no, probamos con 'hora'
-            hora = data.get('hora_db') or data.get('hora')
-            barbero_id = data.get('barberoId')
-            cliente_id = data.get('cedula_cliente') or data.get('clienteId')
-
-            if not all([fecha, hora, barbero_id, cliente_id]):
-                return Response({"error": "Faltan campos obligatorios en el formulario"}, status=400)
-
-            nueva_cita = Cita.objects.create(
-                fecha=fecha,
-                hora=hora,
-                cedula_barbero_id=str(barbero_id),
-                cedula_cliente_id=str(cliente_id),
-                id_servicio=data.get('id_servicio', 1)
-            )
-            
-            return Response({"message": "Cita agendada"}, status=status.HTTP_201_CREATED)
+            return Response({
+                "success": True,
+                "message": "Lista de horas disponibles",
+                "data": bloques
+            })
 
         except Exception as e:
-            print(f"ERROR AL GUARDAR: {str(e)}") # 🚨 Mira este error en tu consola negra
-            return Response({"error": f"Error en base de datos: {str(e)}"}, status=400)
-# 4. MI AGENDA (Para el barbero)
-class AgendaDelBarberoView(APIView):
+            # Esto te ayudará a ver errores exactos en la consola de Django
+            import traceback
+            print(traceback.format_exc())
+            return Response({"success": False, "message": str(e)}, status=500)
+
+class GestionarAgendaView(APIView):
+    # Obtener todos los horarios (o filtrar por barbero)
     def get(self, request):
-        try:
-            barbero_id = request.query_params.get('barberoId') 
-            fecha = request.query_params.get('fecha')
+        barbero_id = request.query_params.get('barberoId')
+        if barbero_id:
+            agendas = AgendaBarbero.objects.filter(cedula_barbero=barbero_id)
+        else:
+            agendas = AgendaBarbero.objects.all()
+        
+        serializer = AgendaBarberoSerializer(agendas, many=True)
+        return Response({"success": True, "data": serializer.data})
 
-            if not barbero_id or not fecha:
-                return Response({"error": "Faltan parámetros barberoId o fecha"}, status=400)
+    # Crear o actualizar un horario
+    def post(self, request):
+        # Intentamos buscar si ya existe un horario para ese barbero ese día
+        cedula = request.data.get('cedula_barbero')
+        dia = request.data.get('dia')
+        
+        instancia = AgendaBarbero.objects.filter(cedula_barbero=cedula, dia=dia).first()
+        
+        # Si existe, actualizamos. Si no, creamos uno nuevo.
+        serializer = AgendaBarberoSerializer(instancia, data=request.data) if instancia \
+                     else AgendaBarberoSerializer(data=request.data)
 
-            # 🚨 REGLA DE ORO: 
-            # 1. Usamos str() para que Postgres no se queje (character varying = integer).
-            # 2. Asegúrate que el nombre del campo sea cedula_barbero_id (como en tu modelo).
-            citas = Cita.objects.filter(
-                cedula_barbero_id=str(barbero_id), 
-                fecha=fecha
-            ).order_by('hora')
-
-            serializer = CitaSerializer(citas, many=True)
-            return Response(serializer.data)
-
-        except Exception as e:
-            # 🔍 Esto imprimirá el error real en tu consola negra de Django
-            print(f"Error real en Mi Agenda: {str(e)}")
-            return Response({"error": "Error interno del servidor", "detalle": str(e)}, status=500)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "success": True, 
+                "message": "Horario guardado correctamente",
+                "data": serializer.data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response({"success": False, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
