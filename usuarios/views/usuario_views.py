@@ -5,6 +5,8 @@ from ..models.usuario import Usuario
 from ..serializers.usuario_serializer import UsuarioSerializer
 from ..permissions.role_permissions import IsAdminRole
 from ..utils.api_response import api_response
+from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 
 
 class UsuarioViewSet(ModelViewSet):
@@ -56,3 +58,11 @@ class UsuarioViewSet(ModelViewSet):
             None,
             status.HTTP_400_BAD_REQUEST
         )
+class ListaBarberosView(APIView):
+    permission_classes = [AllowAny] # O IsAuthenticated si quieres que solo logueados vean barberos
+
+    def get(self, request):
+        # Filtramos por el rol que definiste en el modelo
+        barberos = Usuario.objects.filter(rol='Barbero', estado='Activo')
+        serializer = UsuarioSerializer(barberos, many=True)
+        return api_response(True, "Lista de barberos", serializer.data)

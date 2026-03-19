@@ -33,6 +33,8 @@ urlpatterns = [
     
     # Módulo Agenda
     path('api/agenda/', include('agenda.urls')),
+    # Para reservas
+    path('api/cita/', include('cita.urls')),    
     
     #Modulo Servicio
     path("api/", include("servicios.urls")),

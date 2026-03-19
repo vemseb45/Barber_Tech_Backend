@@ -38,26 +38,17 @@ class LoginView(APIView):
         )
 
 class MeView(APIView):
-    
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-
-        
+        # request.user ya es el objeto Usuario gracias al Token
         serializer = UsuarioSerializer(request.user)
         return api_response(
-    True,
-    "Inicio de sesión exitoso",
-    {
-        'token': str(refresh.access_token),
-        'rol': user.rol,
-        'user': {
-            'username': user.username,
-            'rol': user.rol
-        }
-    },
-    status.HTTP_200_OK
-)
+            True,
+            "Datos del perfil obtenidos",
+            serializer.data,
+            status.HTTP_200_OK
+        )
 
 class RegistroView(APIView):
     permission_classes = [AllowAny]
