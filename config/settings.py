@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     # Terceros
     'rest_framework',
     'corsheaders',
+    "django_filters",
     # Apps propias
     'usuarios',
     'barberias',
