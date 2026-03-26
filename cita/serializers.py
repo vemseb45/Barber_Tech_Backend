@@ -3,15 +3,24 @@ from .models import Cita
 from usuarios.models import Usuario
 
 class CitaSerializer(serializers.ModelSerializer):
-    cliente_nombre = serializers.SerializerMethodField()
+    # Campo de solo lectura para mostrar el nombre en el frontend
+    cliente_nombre = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Cita
-        fields = ['id', 'fecha', 'hora', 'servicio', 'cedula_cliente_id', 'cliente_nombre']
+        # IMPORTANTE: Usa los nombres exactos de los atributos en tu modelo
+        fields = [
+            'id', 
+            'fecha', 
+            'hora', 
+            'servicio', 
+            'cedula_cliente',  # FK al modelo Usuario (Cliente)
+            'cedula_barbero',  # FK al modelo Usuario (Barbero) - ¡ESTE FALTABA!
+            'cliente_nombre'
+        ]
 
     def get_cliente_nombre(self, obj):
-        try:
-            u = Usuario.objects.get(cedula=obj.cedula_cliente_id)
-            return u.username
-        except:
-            return "Desconocido"
+        # obj.cedula_cliente es la instancia del usuario relacionado
+        if obj.cedula_cliente:
+            return obj.cedula_cliente.username
+        return "Desconocido"
