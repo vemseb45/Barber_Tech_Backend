@@ -4,6 +4,17 @@ from servicios.models import Servicio  # <--- Ahora esto ya no fallará
 from usuarios.models import Usuario
 
 class Cita(models.Model):
+    ESTADOS = [
+        ('PENT', 'Pendiente'),
+        ('CONF', 'Confirmada'),
+        ('CANC', 'Cancelada'),
+    ]
+    
+    estado = models.CharField(
+        max_length=20, 
+        choices=ESTADOS, 
+        default='PENT',
+    )
     fecha = models.DateField()
     hora = models.TimeField()
 

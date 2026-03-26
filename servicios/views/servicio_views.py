@@ -49,15 +49,26 @@ class ServicioViewSet(ModelViewSet):
     # LISTAR
     # ======================
 
-    def list(self, request):
+    def list(self, request, *args, **kwargs):
+        try:
+            # 1. Obtenemos los servicios desde el service
+            queryset = ServicioService.listar_servicios()
+            
+            # 2. Aplicamos filtros (búsqueda, orden, etc.)
+            queryset = self.filter_queryset(queryset)
 
-        queryset = ServicioService.listar_servicios()
-        queryset = self.filter_queryset(queryset)
+            # 3. Serializamos los datos (sin paginación para evitar el error)
+            serializer = self.get_serializer(queryset, many=True)
 
-        page = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(page, many=True)
-
-        return self.get_paginated_response(serializer.data)
+            # 4. Retornamos con tu formato estándar
+            return api_response(
+                True,
+                "Servicios obtenidos correctamente",
+                serializer.data,
+                status.HTTP_200_OK
+            )
+        except Exception as e:
+            return api_response(False, str(e), None, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # ======================
     # CREAR (solo admin)

@@ -4,6 +4,7 @@ from django.db import models
 from django.db import models
 
 class Servicio(models.Model):
+
     id_servicio = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=255, null=True, blank=True)
