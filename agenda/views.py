@@ -8,6 +8,49 @@ from cita.models import Cita
 from usuarios.models.usuario import Usuario
 from .serializers import BarberoSerializer, CitaSerializer, AgendaBarberoSerializer
 
+class MiAgendaView(APIView):
+    def get(self, request):
+        barbero_id = request.query_params.get("barberoId")
+        fecha = request.query_params.get("fecha")
+
+        if not barbero_id or not fecha:
+            return Response({
+                "success": False,
+                "message": "Faltan parámetros"
+            }, status=400)
+
+        try:
+            citas = Cita.objects.filter(
+                cedula_barbero_id=barbero_id,
+                fecha=fecha
+            )
+
+            data = []
+            for cita in citas:
+                # 🔥 SOLO MOSTRAR PENDIENTES EN RESPUESTA (NO EN QUERY)
+                if cita.estado != 'PENT':
+                    continue
+
+                data.append({
+                    "id": cita.id,
+                    "cedula_cliente_id": cita.cedula_cliente_id,
+                    "fecha": str(cita.fecha),
+                    "hora": cita.hora.strftime('%H:%M'),
+                    "id_servicio": cita.servicio.id_servicio if hasattr(cita.servicio, 'id_servicio') else cita.servicio.id,
+                    "estado": cita.estado
+                })
+
+            return Response({
+                "success": True,
+                "data": data
+            })
+
+        except Exception as e:
+            return Response({
+                "success": False,
+                "message": str(e)
+            }, status=500)
+
 class DisponibilidadBarbero(APIView):
     def get(self, request):
         barbero_id = request.query_params.get("barberoId")
@@ -102,3 +145,5 @@ class GestionarAgendaView(APIView):
             }, status=status.HTTP_201_CREATED)
         
         return Response({"success": False, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+   
