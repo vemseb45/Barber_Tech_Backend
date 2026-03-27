@@ -63,10 +63,37 @@ def finalizar_cita(request, cita_id):
             "message": "Cita no encontrada"
         }, status=404)
 
+@api_view(['PATCH'])
+def cancelar_cita(request, cita_id):
+    try:
+        cita = Cita.objects.get(id=cita_id)
+
+        # 🔥 Solo permitir cancelar si está pendiente
+        if cita.estado != 'PENT':
+            return Response({
+                "success": False,
+                "message": "Solo se pueden cancelar citas pendientes"
+            }, status=400)
+
+        cita.estado = 'CANC'
+        cita.save()
+
+        return Response({
+            "success": True,
+            "message": "Cita cancelada correctamente"
+        })
+
+    except Cita.DoesNotExist:
+        return Response({
+            "success": False,
+            "message": "Cita no encontrada"
+        }, status=404)
+
 
 class HistorialCitasView(APIView):
     def get(self, request):
         barbero_id = request.query_params.get("barberoId")
+        estado = request.query_params.get("estado")  # 🔥 nuevo
 
         if not barbero_id:
             return Response({
@@ -74,11 +101,17 @@ class HistorialCitasView(APIView):
                 "message": "Falta barberoId"
             }, status=400)
 
-        # 🔥 SOLO CONFIRMADAS (historial)
-        citas = Cita.objects.filter(
-            cedula_barbero_id=barbero_id,
-            estado='CONF'
-        ).select_related('servicio', 'cedula_cliente')
+        # 🔥 filtro dinámico
+        filtros = {
+            "cedula_barbero_id": barbero_id
+        }
+
+        if estado:
+            filtros["estado"] = estado
+        else:
+            filtros["estado"] = 'CONF'  # 👈 por defecto historial normal
+
+        citas = Cita.objects.filter(**filtros).select_related('servicio', 'cedula_cliente')
 
         data = []
         for cita in citas:
