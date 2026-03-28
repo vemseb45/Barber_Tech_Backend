@@ -4,6 +4,8 @@ from .models import Cita
 from .serializers import CitaSerializer
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 
 
 class ReservarCita(APIView):
@@ -30,7 +32,6 @@ class AgendaDelBarberoView(APIView):
                 "message": "Falta barberoId"
             }, status=400)
 
-        # 🔥 SOLO CITAS PENDIENTES
         citas = Cita.objects.filter(
             cedula_barbero_id=barbero,
             estado='PENT'
@@ -48,7 +49,6 @@ def finalizar_cita(request, cita_id):
     try:
         cita = Cita.objects.get(id=cita_id)
 
-        # 🔥 Cambiar estado a CONFIRMADA
         cita.estado = 'CONF'
         cita.save()
 
@@ -63,12 +63,12 @@ def finalizar_cita(request, cita_id):
             "message": "Cita no encontrada"
         }, status=404)
 
+
 @api_view(['PATCH'])
 def cancelar_cita(request, cita_id):
     try:
         cita = Cita.objects.get(id=cita_id)
 
-        # 🔥 Solo permitir cancelar si está pendiente
         if cita.estado != 'PENT':
             return Response({
                 "success": False,
@@ -93,7 +93,7 @@ def cancelar_cita(request, cita_id):
 class HistorialCitasView(APIView):
     def get(self, request):
         barbero_id = request.query_params.get("barberoId")
-        estado = request.query_params.get("estado")  # 🔥 nuevo
+        estado = request.query_params.get("estado")
 
         if not barbero_id:
             return Response({
@@ -101,7 +101,6 @@ class HistorialCitasView(APIView):
                 "message": "Falta barberoId"
             }, status=400)
 
-        # 🔥 filtro dinámico
         filtros = {
             "cedula_barbero_id": barbero_id
         }
@@ -109,7 +108,7 @@ class HistorialCitasView(APIView):
         if estado:
             filtros["estado"] = estado
         else:
-            filtros["estado"] = 'CONF'  # 👈 por defecto historial normal
+            filtros["estado"] = 'CONF'
 
         citas = Cita.objects.filter(**filtros).select_related('servicio', 'cedula_cliente')
 
@@ -128,3 +127,29 @@ class HistorialCitasView(APIView):
             "success": True,
             "data": data
         })
+
+
+# ✅ ENDPOINT CORREGIDO
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def citas_pendientes_cliente(request):
+    try:
+        cliente = request.user
+
+        citas = Cita.objects.filter(
+            cedula_cliente=cliente,
+            estado='PENT'   # ✅ CORREGIDO
+        ).order_by('fecha', 'hora')
+
+        serializer = CitaSerializer(citas, many=True)
+
+        return Response({
+            "success": True,
+            "data": serializer.data
+        })
+
+    except Exception as e:
+        return Response({
+            "success": False,
+            "error": str(e)
+        }, status=400)
