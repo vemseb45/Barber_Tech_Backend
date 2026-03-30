@@ -153,3 +153,27 @@ def citas_pendientes_cliente(request):
             "success": False,
             "error": str(e)
         }, status=400)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def citas_terminadas_cliente(request):
+    try:
+        cliente = request.user
+
+        citas = Cita.objects.filter(
+            cedula_cliente=cliente,
+            estado='CONF'   # ✅ TERMINADAS
+        ).order_by('-fecha', '-hora')  # opcional: más recientes primero
+
+        serializer = CitaSerializer(citas, many=True)
+
+        return Response({
+            "success": True,
+            "data": serializer.data
+        })
+
+    except Exception as e:
+        return Response({
+            "success": False,
+            "error": str(e)
+        }, status=400)

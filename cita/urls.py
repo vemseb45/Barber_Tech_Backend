@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ReservarCita, finalizar_cita, HistorialCitasView, cancelar_cita, citas_pendientes_cliente
+from .views import ReservarCita, finalizar_cita, HistorialCitasView, cancelar_cita, citas_pendientes_cliente, citas_terminadas_cliente
 
 urlpatterns = [
     path('reservar/', ReservarCita.as_view()),
@@ -7,4 +7,5 @@ urlpatterns = [
     path('historial/', HistorialCitasView.as_view()),
     path('cancelar/<int:cita_id>/', cancelar_cita),
     path('pendientes/cliente/', citas_pendientes_cliente),
+    path('terminadas/cliente/', citas_terminadas_cliente),
 ]
