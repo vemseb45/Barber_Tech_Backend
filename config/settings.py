@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # Apps propias
     'usuarios',
     'barberias',
+    'barberos',
     'agenda',
     'cita',
     'servicios',
