@@ -6,7 +6,17 @@ class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
         # Es mejor listar los campos explícitamente para evitar enviar el hash del password
-        fields = ['id', 'username', 'email', 'rol', 'cedula', 'telefono', 'estado', 'password']
+        fields = [
+        'id',
+        'username',
+        'firs_name',
+        'last_name',
+        'email', 
+        'rol', 
+        'cedula', 
+        'telefono', 
+        'estado', 
+        'password']
         extra_kwargs = {
             'password': {'write_only': True}
         }

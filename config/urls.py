@@ -41,4 +41,7 @@ urlpatterns = [
     
     #Modulo Barberia y especialidad
     path("api/", include("barberias.urls")),
+
+    #Modulo Barberos (barbero detalle)
+    path("api/", include("barberos.urls")),
 ]

@@ -31,4 +31,6 @@ class BarberoDetalle(models.Model):
         db_table = "barbero_detalle"
 
     def __str__(self):
-        return f"{self.cedula.nombre} - {self.barberia.nombre}"
+        usuario = self.cedula
+        nombre = f"{usuario.first_name} {usuario.last_name}".strip()
+        return f"{nombre or usuario.username} - {self.barberia.nombre}"
