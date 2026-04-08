@@ -146,4 +146,124 @@ class GestionarAgendaView(APIView):
         
         return Response({"success": False, "errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-   
+class CargaMasivaAgendaView(APIView):
+    def post(self, request):
+        horarios = request.data.get("horarios", [])
+
+        if not isinstance(horarios, list) or len(horarios) == 0:
+            return Response({
+                "success": False,
+                "message": "No se enviaron datos válidos"
+            }, status=400)
+
+        errores = []
+        creados = 0
+        actualizados = 0
+
+        for index, row in enumerate(horarios):
+            try:
+                cedula = row.get("cedula_barbero")
+                dia = row.get("dia")
+                hora_inicio = row.get("hora_inicio")
+                hora_fin = row.get("hora_fin")
+
+                # Validaciones básicas
+                if not cedula or not dia or not hora_inicio or not hora_fin:
+                    errores.append({
+                        "fila": index + 2,
+                        "error": "Campos incompletos"
+                    })
+                    continue
+
+                # Convertir horas (string → time)
+                try:
+                    hora_inicio = datetime.strptime(hora_inicio, "%H:%M").time()
+                    hora_fin = datetime.strptime(hora_fin, "%H:%M").time()
+                except:
+                    errores.append({
+                        "fila": index + 2,
+                        "error": "Formato de hora inválido (usa HH:MM)"
+                    })
+                    continue
+
+                if hora_inicio >= hora_fin:
+                    errores.append({
+                        "fila": index + 2,
+                        "error": "Hora inicio debe ser menor a hora fin"
+                    })
+                    continue
+
+                # Buscar si ya existe
+                agenda = AgendaBarbero.objects.filter(
+                    cedula_barbero=cedula,
+                    dia__iexact=dia
+                ).first()
+
+                if agenda:
+                    agenda.hora_inicio = hora_inicio
+                    agenda.hora_fin = hora_fin
+                    agenda.save()
+                    actualizados += 1
+                else:
+                    AgendaBarbero.objects.create(
+                        cedula_barbero=cedula,
+                        dia=dia,
+                        hora_inicio=hora_inicio,
+                        hora_fin=hora_fin
+                    )
+                    creados += 1
+
+            except Exception as e:
+                errores.append({
+                    "fila": index + 2,
+                    "error": str(e)
+                })
+
+        return Response({
+            "success": True,
+            "message": "Proceso finalizado",
+            "creados": creados,
+            "actualizados": actualizados,
+            "errores": errores
+        })
+class AgendaDetalleView(APIView):
+
+    # 🔍 OBTENER UNO
+    def get(self, request, id):
+        try:
+            agenda = AgendaBarbero.objects.get(id=id)
+            serializer = AgendaBarberoSerializer(agenda)
+            return Response({"success": True, "data": serializer.data})
+        except AgendaBarbero.DoesNotExist:
+            return Response({"success": False, "message": "No encontrado"}, status=404)
+
+    # ✏️ ACTUALIZAR
+    def put(self, request, id):
+        try:
+            agenda = AgendaBarbero.objects.get(id=id)
+        except AgendaBarbero.DoesNotExist:
+            return Response({"success": False, "message": "No encontrado"}, status=404)
+
+        serializer = AgendaBarberoSerializer(agenda, data=request.data, partial=True)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                "success": True,
+                "message": "Horario actualizado",
+                "data": serializer.data
+            })
+
+        return Response({"success": False, "errors": serializer.errors}, status=400)
+
+    # 🗑 ELIMINAR
+    def delete(self, request, id):
+        try:
+            agenda = AgendaBarbero.objects.get(id=id)
+            agenda.delete()
+            return Response({
+                "success": True,
+                "message": "Horario eliminado"
+            })
+        except AgendaBarbero.DoesNotExist:
+            return Response({"success": False, "message": "No encontrado"}, status=404)
