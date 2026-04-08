@@ -9,7 +9,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
         fields = [
         'id',
         'username',
-        'firs_name',
+        'first_name',
         'last_name',
         'email', 
         'rol', 

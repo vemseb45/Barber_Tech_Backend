@@ -21,4 +21,4 @@ class Usuario(AbstractUser):
     estado = models.CharField(max_length=20, default='Activo')
 
     def __str__(self):
-        return f"{self.username} - {self.rol}"
+        return f"{self.cedula} - {self.username} - {self.rol}"
