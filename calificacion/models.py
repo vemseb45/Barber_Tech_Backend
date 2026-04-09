@@ -13,4 +13,4 @@ class Calificacion(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Calificación {self.puntuacion} - Cita {self.cita.id_cita}"
+        return f"Calificación {self.puntuacion} - Cita #{self.cita.id}"
