@@ -3,9 +3,9 @@ from .views import DisponibilidadBarbero, GestionarAgendaView, MiAgendaView, Car
 
 urlpatterns = [
     path('disponibilidad/', DisponibilidadBarbero.as_view()),
-    path('configurar/', GestionarAgendaView.as_view()),  # POST (crear/actualizar por día)
-    path('', GestionarAgendaView.as_view()),             # GET (listar)
-    path('delet/<int:id>/', AgendaDetalleView.as_view()),      # 🔥 DELETE / PUT
+    path('configurar/', GestionarAgendaView.as_view()),  # POST
+    path('', GestionarAgendaView.as_view()),             # GET
+    path('configurar/<int:id>/', AgendaDetalleView.as_view()),  # PUT / DELETE
     path('miAgenda/', MiAgendaView.as_view()),
     path('carga-masiva/', CargaMasivaAgendaView.as_view()),
 ]

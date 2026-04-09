@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'cita',
     'servicios',
     'pagos',
+    'calificacion',
 ]
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
