@@ -60,6 +60,20 @@ class BarberoDetalleViewSet(ModelViewSet):
                     "success": False,
                     "message": "Barbería y especialidad son obligatorias"
                 }, status=status.HTTP_400_BAD_REQUEST)
+            
+            telefono = data.get("telefono")
+
+            if not telefono:
+                return Response({
+                    "success": False,
+                    "message": "El teléfono es obligatorio"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if len(telefono) != 10:
+                return Response({
+                    "success": False,
+                    "message": "El teléfono debe tener 10 dígitos"
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             # 🔴 4. TRANSACCIÓN (CRÍTICO)
             with transaction.atomic():
