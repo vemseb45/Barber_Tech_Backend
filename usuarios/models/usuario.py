@@ -16,8 +16,8 @@ class Usuario(AbstractUser):
         default='Cliente'
     )
     
-    cedula = models.CharField(max_length=10, unique=True, null=True, blank=True)
-    telefono = models.CharField(max_length=10, null=True, blank=True)
+    cedula = models.CharField(max_length=10, unique=True)
+    telefono = models.CharField(max_length=10)
     estado = models.CharField(max_length=10, default='Activo') 
 
     def __str__(self):
