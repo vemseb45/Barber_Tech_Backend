@@ -11,14 +11,14 @@ class Usuario(AbstractUser):
     ]
     
     rol = models.CharField(
-        max_length=20, 
+        max_length=10, 
         choices=ROLES, 
         default='Cliente'
     )
     
-    cedula = models.CharField(max_length=20, unique=True, null=True, blank=True)
-    telefono = models.CharField(max_length=20, null=True, blank=True)
-    estado = models.CharField(max_length=20, default='Activo')
+    cedula = models.CharField(max_length=10, unique=True, null=True, blank=True)
+    telefono = models.CharField(max_length=10, null=True, blank=True)
+    estado = models.CharField(max_length=10, default='Activo') 
 
     def __str__(self):
         return f"{self.cedula} - {self.username} - {self.rol}"
