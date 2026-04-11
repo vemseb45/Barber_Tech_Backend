@@ -2,7 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from datetime import datetime, timedelta
-
+from .utils.agenda import obtener_cedula_barbero
 from .models import AgendaBarbero
 from cita.models import Cita  
 from usuarios.models.usuario import Usuario
@@ -24,18 +24,27 @@ class MiAgendaView(APIView):
                 "message": "Falta barberoId"
             }, status=400)
 
+        # ✅ CONVERTIR ID → CÉDULA
+        cedula = obtener_cedula_barbero(barbero_id)
+
+        if not cedula:
+            return Response({
+                "success": False,
+                "message": "Barbero no existe"
+            }, status=404)
+
         try:
             # 🔥 CASO 1: RANGO DE FECHAS (PRO)
             if fecha_inicio and fecha_fin:
                 citas = Cita.objects.filter(
-                    cedula_barbero_id=barbero_id,
+                    cedula_barbero_id=cedula,
                     fecha__range=[fecha_inicio, fecha_fin]
                 )
 
             # 🔥 CASO 2: SOLO UNA FECHA (COMPATIBLE)
             elif fecha:
                 citas = Cita.objects.filter(
-                    cedula_barbero_id=barbero_id,
+                    cedula_barbero_id=cedula,
                     fecha=fecha
                 )
 
@@ -77,9 +86,15 @@ class DisponibilidadBarbero(APIView):
     def get(self, request):
         barbero_id = request.query_params.get("barberoId")
         fecha_str = request.query_params.get("fecha")
-        
+
         if not barbero_id or not fecha_str:
             return Response({"success": False, "message": "Faltan parámetros"}, status=400)
+
+        # ✅ CONVERTIR ID → CÉDULA
+        cedula = obtener_cedula_barbero(barbero_id)
+
+        if not cedula:
+            return Response({"success": False, "message": "Barbero no existe"}, status=404)
 
         try:
             fecha_obj = datetime.strptime(fecha_str, '%Y-%m-%d').date()
@@ -88,7 +103,7 @@ class DisponibilidadBarbero(APIView):
             nombre_dia = dias[fecha_obj.weekday()]
 
             agenda = AgendaBarbero.objects.filter(
-                cedula_barbero=barbero_id, 
+                cedula_barbero=cedula, 
                 dia__iexact=nombre_dia
             ).first()
 
@@ -100,7 +115,7 @@ class DisponibilidadBarbero(APIView):
                 })
             
             citas_existentes = Cita.objects.filter(
-                cedula_barbero_id=barbero_id, 
+                cedula_barbero_id=cedula, 
                 fecha=fecha_obj
             ).values_list('hora', flat=True)
 
@@ -140,7 +155,8 @@ class GestionarAgendaView(APIView):
         barbero_id = request.query_params.get('barberoId')
 
         if barbero_id:
-            agendas = AgendaBarbero.objects.filter(cedula_barbero=barbero_id)
+            cedula = obtener_cedula_barbero(barbero_id)
+            agendas = AgendaBarbero.objects.filter(cedula_barbero=cedula)
         else:
             agendas = AgendaBarbero.objects.all()
         

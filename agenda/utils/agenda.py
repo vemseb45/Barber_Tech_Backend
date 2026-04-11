@@ -1,6 +1,15 @@
 # agenda/utils/agenda.py
 from datetime import datetime, timedelta
-from ..models import Cita, AgendaBarbero
+from cita.models import Cita
+from ..models import AgendaBarbero
+from usuarios.models.usuario import Usuario
+
+def obtener_cedula_barbero(barbero_id):
+    try:
+        usuario = Usuario.objects.get(id=barbero_id)
+        return usuario.cedula
+    except Usuario.DoesNotExist:
+        return None
 
 def obtener_disponibilidad_opt(cedula_barbero, fecha, duracion):
     """
