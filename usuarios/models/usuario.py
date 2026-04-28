@@ -19,6 +19,6 @@ class Usuario(AbstractUser):
     cedula = models.CharField(max_length=20, unique=True, null=True, blank=True)
     telefono = models.CharField(max_length=20, null=True, blank=True)
     estado = models.CharField(max_length=20, default='Activo')
-
+    REQUIRED_FIELDS = ['email', 'cedula']
     def __str__(self):
         return f"{self.username} - {self.rol}"
