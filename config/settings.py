@@ -46,10 +46,12 @@ INSTALLED_APPS = [
     # Apps propias
     'usuarios',
     'barberias',
+    'barberos',
     'agenda',
     'cita',
     'servicios',
     'pagos',
+    'calificacion',
 ]
 
 AUTH_USER_MODEL = 'usuarios.Usuario'
@@ -95,16 +97,32 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST'),
-        'PORT': config('DB_PORT'),
+# ===============================
+# DATABASE CONFIGURATION
+# ===============================
+
+DB_ENGINE = config("DB_ENGINE", default="sqlite").lower()
+
+if DB_ENGINE == "postgres":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DB_NAME"),
+            "USER": config("DB_USER"),
+            "PASSWORD": config("DB_PASSWORD"),
+            "HOST": config("DB_HOST"),
+            "PORT": config("DB_PORT"),
+        }
     }
-}                           
+
+else:
+    # SQLite fallback automático
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }                          
 
 
 
@@ -151,3 +169,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 465
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
+EMAIL_HOST_USER = 'niokcrack0@gmail.com'
+EMAIL_HOST_PASSWORD = 'psprimhdvrovyydm'

@@ -1,0 +1,1 @@
+from .barbero_detalle import BarberoDetalle
