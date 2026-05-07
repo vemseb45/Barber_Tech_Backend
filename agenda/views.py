@@ -164,16 +164,26 @@ class GestionarAgendaView(APIView):
         return Response({"success": True, "data": serializer.data})
 
     def post(self, request):
-        cedula = request.data.get('cedula_barbero')
-        dia = request.data.get('dia')
+        data = request.data.copy() if hasattr(request.data, 'copy') else request.data
+        
+        # Si el frontend envía barberoId en lugar de cedula_barbero
+        if 'barberoId' in data and not data.get('cedula_barbero'):
+            cedula = obtener_cedula_barbero(data['barberoId'])
+            if cedula:
+                data['cedula_barbero'] = cedula
+            else:
+                return Response({"success": False, "message": "Barbero no encontrado"}, status=status.HTTP_400_BAD_REQUEST)
+
+        cedula = data.get('cedula_barbero')
+        dia = data.get('dia')
         
         instancia = AgendaBarbero.objects.filter(
             cedula_barbero=cedula,
             dia=dia
         ).first()
         
-        serializer = AgendaBarberoSerializer(instancia, data=request.data) if instancia \
-                    else AgendaBarberoSerializer(data=request.data)
+        serializer = AgendaBarberoSerializer(instancia, data=data) if instancia \
+                    else AgendaBarberoSerializer(data=data)
 
         if serializer.is_valid():
             serializer.save()
@@ -281,7 +291,13 @@ class AgendaDetalleView(APIView):
         except AgendaBarbero.DoesNotExist:
             return Response({"success": False, "message": "No encontrado"}, status=404)
 
-        serializer = AgendaBarberoSerializer(agenda, data=request.data, partial=True)
+        data = request.data.copy() if hasattr(request.data, 'copy') else request.data
+        if 'barberoId' in data and not data.get('cedula_barbero'):
+            cedula = obtener_cedula_barbero(data['barberoId'])
+            if cedula:
+                data['cedula_barbero'] = cedula
+
+        serializer = AgendaBarberoSerializer(agenda, data=data, partial=True)
 
         if serializer.is_valid():
             serializer.save()
