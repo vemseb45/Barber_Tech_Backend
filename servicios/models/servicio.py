@@ -29,9 +29,11 @@ class Servicio(models.Model):
 
     #importa tabla especialidad y obtiene ID especialidad
     especialidad = models.ForeignKey(
-    Especialidad,
-    on_delete=models.PROTECT,
-    related_name="servicios"
+        Especialidad,
+        on_delete=models.PROTECT,
+        related_name="servicios",
+        null=True,
+        blank=True
     )
 
     class Meta:

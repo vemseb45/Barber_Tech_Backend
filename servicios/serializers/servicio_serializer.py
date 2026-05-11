@@ -31,7 +31,9 @@ class ServicioSerializer(serializers.ModelSerializer):
     )
 
     especialidad = serializers.PrimaryKeyRelatedField(
-        queryset=Especialidad.objects.all()
+        queryset=Especialidad.objects.all(),
+        required=False,
+        allow_null=True
     )
 
     # READ (frontend recibe objetos)
