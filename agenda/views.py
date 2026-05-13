@@ -37,14 +37,14 @@ class MiAgendaView(APIView):
             # 🔥 CASO 1: RANGO DE FECHAS (PRO)
             if fecha_inicio and fecha_fin:
                 citas = Cita.objects.filter(
-                    cedula_barbero_id=cedula,
+                    cedula_barbero_id=barbero_id,
                     fecha__range=[fecha_inicio, fecha_fin]
                 )
 
             # 🔥 CASO 2: SOLO UNA FECHA (COMPATIBLE)
             elif fecha:
                 citas = Cita.objects.filter(
-                    cedula_barbero_id=cedula,
+                    cedula_barbero_id=barbero_id,
                     fecha=fecha
                 )
 
@@ -63,10 +63,12 @@ class MiAgendaView(APIView):
 
                 data.append({
                     "id": cita.id,
-                    "cedula_cliente_id": cita.cedula_cliente_id,
+                    "cedula_cliente_id": cita.cedula_cliente.cedula if cita.cedula_cliente else cita.cedula_cliente_id,
+                    "cliente_nombre": cita.cedula_cliente.username.title() if cita.cedula_cliente else "Desconocido",
                     "fecha": str(cita.fecha),
                     "hora": cita.hora.strftime('%H:%M'),
                     "id_servicio": cita.servicio.id_servicio if hasattr(cita.servicio, 'id_servicio') else cita.servicio.id,
+                    "nombre_servicio": cita.servicio.nombre.title() if hasattr(cita.servicio, 'nombre') else "Desconocido",
                     "estado": cita.estado
                 })
 
@@ -115,11 +117,21 @@ class DisponibilidadBarbero(APIView):
                 })
             
             citas_existentes = Cita.objects.filter(
-                cedula_barbero_id=cedula, 
-                fecha=fecha_obj
-            ).values_list('hora', flat=True)
+                cedula_barbero_id=barbero_id, 
+                fecha=fecha_obj,
+                estado__in=['PENT', 'CONF']
+            ).select_related('servicio')
 
-            horas_ocupadas = [c.strftime('%H:%M') for c in citas_existentes]
+            horas_ocupadas = []
+            for cita in citas_existentes:
+                hora_inicio_cita = datetime.combine(fecha_obj, cita.hora)
+                duracion = cita.servicio.duracion_minutos if hasattr(cita.servicio, 'duracion_minutos') else 30
+                hora_fin_cita = hora_inicio_cita + timedelta(minutes=duracion)
+                
+                hora_temp = hora_inicio_cita
+                while hora_temp < hora_fin_cita:
+                    horas_ocupadas.append(hora_temp.strftime('%H:%M'))
+                    hora_temp += timedelta(minutes=30)
 
             bloques = []
             hora_actual = datetime.combine(fecha_obj, agenda.hora_inicio)

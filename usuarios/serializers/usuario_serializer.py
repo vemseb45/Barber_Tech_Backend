@@ -21,6 +21,16 @@ class UsuarioSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if ret.get('username'):
+            ret['username'] = ret['username'].title()
+        if ret.get('first_name'):
+            ret['first_name'] = ret['first_name'].title()
+        if ret.get('last_name'):
+            ret['last_name'] = ret['last_name'].title()
+        return ret
+
     def create(self, validated_data):
         password = validated_data.pop('password')
         user = Usuario(**validated_data)

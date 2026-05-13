@@ -20,6 +20,12 @@ class Servicio(models.Model):
 
     duracion_minutos = models.IntegerField()
 
+    imagen = models.ImageField(
+        upload_to='servicios/', 
+        null=True, 
+        blank=True
+    )
+
     #importa tabla barberia
     barberia = models.ForeignKey(
     Barberia,

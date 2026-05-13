@@ -59,7 +59,14 @@ class ServicioSerializer(serializers.ModelSerializer):
             "especialidad",
             "barberia_detalle",
             "especialidad_detalle",
+            "imagen",
         ]
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        if ret.get('nombre'):
+            ret['nombre'] = ret['nombre'].title()
+        return ret
 
     # =============================
     # VALIDACIONES
