@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import DisponibilidadBarbero, GestionarAgendaView, MiAgendaView, CargaMasivaAgendaView, AgendaDetalleView
+from .views_analytics import AdminAnalyticsView
 
 urlpatterns = [
     path('disponibilidad/', DisponibilidadBarbero.as_view()),
@@ -8,4 +9,5 @@ urlpatterns = [
     path('configurar/<int:id>/', AgendaDetalleView.as_view()),  # PUT / DELETE
     path('miAgenda/', MiAgendaView.as_view()),
     path('carga-masiva/', CargaMasivaAgendaView.as_view()),
+    path('analytics/admin/', AdminAnalyticsView.as_view()),
 ]
